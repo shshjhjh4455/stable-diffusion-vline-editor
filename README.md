@@ -84,7 +84,7 @@ Using the generated mask, the Stability AI API applies the inpainting prompt to 
 
 | Original Image | Mask | Result Image |
 | --- | --- | --- |
-| ![Original](example/original_image.jpg) | ![Mask](example/mask_image.jpg) | ![Result](example/result_image.jpg) |
+| ![Original](examples/original_image.jpg) | ![Mask](examples/mask_image.jpg) | ![Result](examples/result_image.jpg) |
 
 ## Acknowledgments
 
