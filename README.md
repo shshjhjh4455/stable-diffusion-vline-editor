@@ -1,104 +1,92 @@
 
-# V-Line Inpainting Editor with Stable Diffusion
+# V-Line Inpaint Editor with Stability AI API
 
-This project uses **Stable Diffusion's inpainting capabilities** to apply a V-line effect to a person's jawline in images, providing a professional, sharp, and natural-looking facial contour. The implementation includes a **custom jawline mask generator** using `dlib` facial landmarks, and **Stable Diffusion API** is used to perform the inpainting based on this mask.
-
----
+This project leverages the Stability AI API for inpainting to create a V-line jaw effect on facial images. The main functionality includes detecting a face, generating a mask for the jawline, and applying an inpainting prompt to create a professional portrait with a sharp, V-line jaw effect. The solution dynamically adjusts mask boundaries based on facial proportions, ensuring the V-line effect appears natural across varying face shapes and sizes.
 
 ## Features
-- **Custom Jawline Masking**: Detects facial landmarks and generates a custom mask around the jawline to enhance the V-line contour.
-- **Stable Diffusion Inpainting API**: Applies inpainting with prompts for a refined and sharp jawline.
-- **Seamless API Integration**: Uses Stability AI’s Stable Diffusion API for high-quality image output.
 
-## Requirements
+- **Dynamic Jaw Mask Creation**: Adjusts mask boundaries based on face size and jaw proportions.
+- **Customizable V-Line Strength**: Offers control over the strength of the V-line effect.
+- **Stability AI Inpainting Integration**: Utilizes the Stability AI API to apply image edits based on specified prompts.
 
-To run this project, you’ll need the following packages and files:
-- Python 3.7 or later
-- `dlib` (with `shape_predictor_68_face_landmarks.dat` for facial landmark detection)
-- `opencv-python` and `opencv-python-headless`
-- `requests`, `numpy`, `Pillow`, and `matplotlib`
-- An API key from Stability AI to access the Stable Diffusion API
+## Table of Contents
 
-Install the required packages:
-```bash
-pip install dlib opencv-python opencv-python-headless requests numpy pillow matplotlib
-```
+1. [Installation](#installation)
+2. [Usage](#usage)
+3. [Core Logic Explained](#core-logic-explained)
+4. [Example Output](#example-output)
+5. [Acknowledgments](#acknowledgments)
 
-You can download the `shape_predictor_68_face_landmarks.dat` file [here](http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2) and unzip it in the project directory.
+## Installation
 
-## Setup
+1. Clone the repository:
 
-1. **Clone this repository**:
    ```bash
-   git clone https://github.com/yourusername/vline-inpainting-editor.git
-   cd vline-inpainting-editor
+   git clone https://github.com/your-username/vline-inpaint-editor.git
+   cd vline-inpaint-editor
    ```
 
-2. **Add your Stability AI API key**:  
-   Replace `"YOUR_API_KEY"` with your actual API key in the code file.
+2. Install the required libraries:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Download the `shape_predictor_68_face_landmarks.dat` file for dlib (available [here](http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2)) and place it in the project directory.
 
 ## Usage
 
-To run the project, use the provided `apply_vline_sdxl` function to apply the V-line inpainting effect to an image.
+1. Replace `YOUR_API_KEY` in the code with your Stability AI API key.
 
-### Example Code Usage
+2. Run the example code to apply the V-line effect on an image:
 
-```python
-from vline_inpaint import apply_vline_sdxl
+   ```python
+   from vline_inpaint import apply_vline_sdxl
 
-api_key = "YOUR_API_KEY"
-image_path = "path/to/your/image.jpg"
-result_image = apply_vline_sdxl(image_path, api_key)
-result_image.show()
-```
+   image_path = "path/to/your/image.jpg"
+   api_key = "YOUR_API_KEY"
 
-### Class and Function Descriptions
+   result_image = apply_vline_sdxl(image_path, api_key)
+   result_image.show()
+   ```
 
-#### `VLineInpaintEditorSDXL`
-This class sets up the inpainting process and contains methods to generate the jawline mask and make requests to the Stable Diffusion API.
+## Core Logic Explained
 
-- **`__init__(self, api_key)`**: Initializes the API key and loads dlib’s facial landmark detector.
-- **`image_to_base64(self, image)`**: Converts a PIL image to a base64 string for API compatibility.
-- **`create_jaw_mask(self, image, landmarks, v_strength=0.5)`**: Generates a mask for the V-line by modifying the jawline points.
-- **`process_image(self, image_path, prompt, seed)`**: Main method to process an image and apply inpainting.
+### 1. Dynamic Jaw Mask Creation
 
-#### `apply_vline_sdxl(image_path, api_key)`
-This is the main function for applying the V-line effect. It initializes the editor, processes the image, and returns the result.
+The `create_jaw_mask` function dynamically generates a mask to accentuate the V-line effect. This function uses facial landmarks to identify and modify the jawline region. Key elements include:
 
-## Example Workflow
+- **Jawline Height Calculation**:
+   - The code calculates the jawline height (`jaw_height`) based on the highest and lowest y-coordinates of jawline landmarks.
+   - This measurement adapts the mask’s top and bottom boundaries in proportion to the face size.
 
-1. **Load an Image**: Pass the image path to the `apply_vline_sdxl` function.
-2. **Generate Jawline Mask**: The script detects the face, generates a custom V-line mask, and sends it to the Stable Diffusion API.
-3. **Run Inpainting**: The API uses the provided mask and prompt to refine the jawline with V-line characteristics.
-4. **Display Results**: The processed image is displayed alongside the original and mask images for easy comparison.
+- **Dynamic Offset Calculation**:
+   - The mask’s upper boundary is offset by 15% of `jaw_height`, while the lower boundary is extended by 30%.
+   - These proportional offsets prevent the mask from being too large on smaller faces or too small on larger faces, resulting in a natural jawline transition.
 
-## Troubleshooting
+### 2. Center-Based Jawline Modification
 
-- **API Errors (400 Bad Request)**: Ensure the API key is correct and `Content-Type` headers are set to `multipart/form-data`. Ensure the mask format is PNG or JPEG.
-- **dlib Installation**: Installing `dlib` can be tricky. Refer to the [official dlib installation guide](http://dlib.net/compile.html) if you encounter issues.
-- **Missing Data Files**: Make sure `shape_predictor_68_face_landmarks.dat` is in the project directory.
+The jawline points are moved toward the face center to enhance the V-line shape, based on the following calculations:
 
-## Examples
+- **Center Distance and Vertical Factor**:
+   - Each jaw point’s distance from the chin center is calculated to adjust the point's movement strength.
+   - A vertical factor is applied based on the jawline's top-to-bottom range, ensuring points near the chin move more than those closer to the ears.
 
-<p align="center">
-    <img src="examples/original_image.jpg" width="250px" alt="Original Image">
-    <img src="examples/mask_image.jpg" width="250px" alt="Generated Jaw Mask">
-    <img src="examples/result_image.jpg" width="250px" alt="Resulting V-Line Effect">
-</p>
+- **Dynamic V-Strength Application**:
+   - A `v_strength` parameter defines the degree of movement for each jaw point toward the center.
+   - By combining `v_strength` with the center distance and vertical factor, each point is naturally repositioned to create a balanced V-line effect across different face shapes.
 
-- **Left**: Original Image  
-- **Center**: Jaw Mask  
-- **Right**: Final Inpainted Image  
+### 3. Stability AI Inpainting
 
-## Contributing
-We welcome contributions to enhance the functionality of this project! Please submit pull requests with detailed descriptions of your changes. Ensure all changes pass existing test cases and add new tests where applicable.
+Using the generated mask, the Stability AI API applies the inpainting prompt to enhance the jawline. The mask image and prompt are sent to the API, which returns a modified image with the desired V-line jaw effect.
 
-## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+## Example Output
 
-## Contact
-For any inquiries, please contact [your-email@example.com](mailto:your-email@example.com).
+| Original Image | Mask | Result Image |
+| --- | --- | --- |
+| ![Original](example/original.jpg) | ![Mask](example/mask.jpg) | ![Result](example/result.jpg) |
 
----
+## Acknowledgments
 
-Enjoy creating sharp V-line jawlines with Stable Diffusion!
+- **Stability AI**: For providing the powerful inpainting model used in this project.
+- **dlib**: For the facial landmark detection model used to locate jawline points.
