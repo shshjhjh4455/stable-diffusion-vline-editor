@@ -23,7 +23,7 @@ class VLineInpaintEditorSDXL:
         return base64.b64encode(buffered.getvalue()).decode()
 
     def create_jaw_mask(self, image, landmarks, v_strength=0.5):
-        """턱선 마스크 생성 - V라인 효과 강화"""
+        """턱선 마스크 생성 - 얼굴 크기에 비례하여 V라인 효과 강화"""
         if isinstance(image, Image.Image):
             image = np.array(image)
         
@@ -42,7 +42,14 @@ class VLineInpaintEditorSDXL:
             jaw_points.append([point.x, point.y])
         jaw_points = np.array(jaw_points)
         
-        # 턱선의 중심점 계산
+        # 턱선 높이 계산 (얼굴 크기에 비례하는 기준)
+        jaw_height = np.max(jaw_points[:, 1]) - np.min(jaw_points[:, 1])
+        
+        # 위아래 경계선을 얼굴 크기에 비례하여 설정
+        top_offset = int(jaw_height * 0.15)  # 얼굴 높이의 15%를 위로 확장
+        bottom_offset = int(jaw_height * 0.3)  # 얼굴 높이의 30%를 아래로 확장
+
+        # 턱선 중심점 계산
         center_x = np.mean(jaw_points[:, 0])
         chin_idx = len(jaw_points) // 2
         chin_y = jaw_points[chin_idx, 1]
@@ -59,14 +66,13 @@ class VLineInpaintEditorSDXL:
         # 마스크 포인트 생성
         mask_points = []
         
-        # 위쪽 경계선 (블렌딩을 위해)
+        # 위쪽 경계선 (블렌딩을 위해 얼굴 크기에 비례하여 조정)
         for point in jaw_points:
-            mask_points.append([point[0], point[1] - 20])
+            mask_points.append([point[0], max(0, point[1] - top_offset)])
         
-        # 아래쪽 경계선 (V라인)
+        # 아래쪽 경계선 (V라인 형태로 얼굴 크기에 비례하여 조정)
         for point in modified_points[::-1]:
-            y_extend = 40  # 아래로 더 확장
-            mask_points.append([point[0], min(point[1] + y_extend, height-1)])
+            mask_points.append([point[0], min(height - 1, point[1] + bottom_offset)])
         
         # 마스크 생성
         mask_points = np.array(mask_points)
@@ -79,9 +85,7 @@ class VLineInpaintEditorSDXL:
         # 마스크 강화
         mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)[1]
         
-        # PIL 이미지로 변환
-        mask_image = Image.fromarray(mask)
-        return mask_image
+        return Image.fromarray(mask)
 
     def process_image(self, image_path, prompt="professional portrait photo with perfect v-line jawline", seed=123):
         original_image = Image.open(image_path).convert('RGB')
@@ -104,7 +108,7 @@ class VLineInpaintEditorSDXL:
         # API 요청 준비
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Accept": "image/*"  # 헤더 수정
+            "Accept": "image/*"
         }
         
         files = {
@@ -158,5 +162,5 @@ def apply_vline_sdxl(image_path, api_key):
 
 # 테스트 실행
 api_key = ""
-image_path = "face4.png"
+image_path = "face.jpg"
 result_image = apply_vline_sdxl(image_path, api_key)
